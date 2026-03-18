@@ -263,3 +263,8 @@ A few sentences about what you learned:
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
 
+---
+
+![Terminal output showing top recommendations](Screenshot%202026-03-18%20125630.png)
+
+*Figure 1: Top 5 recommendations for a pop/happy user profile*
