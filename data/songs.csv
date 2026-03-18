@@ -1,19 +1,19 @@
-id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
-1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18
-2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71
-3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10
-4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86
-5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05
-6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92
-7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89
-8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
-9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
-10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
-11,Crown Season,Blaze Carter,hip-hop,euphoric,0.85,98,0.82,0.91,0.12
-12,Velvet Hours,Sable Moon,r&b,romantic,0.55,95,0.78,0.68,0.48
-13,Winter Sonata,Clara Voss,classical,melancholic,0.22,66,0.31,0.29,0.97
-14,Overdrive,Pulse Grid,edm,euphoric,0.96,140,0.88,0.94,0.03
-15,Dirt Road Letters,The Pines,folk,nostalgic,0.38,88,0.62,0.51,0.91
-16,Shatter Everything,Iron Veil,metal,angry,0.95,168,0.22,0.71,0.06
-17,Used To Be,Goldie Vann,soul,sad,0.44,72,0.33,0.45,0.76
-18,Island Clock,Reef Collective,reggae,peaceful,0.52,84,0.79,0.67,0.62
+id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness,popularity,release_decade,mood_tags
+1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18,78,2020,uplifting|bright|carefree
+2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71,45,2020,dreamy|calm|focused
+3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10,62,2010,aggressive|powerful|driven
+4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86,38,2020,dreamy|calm|introspective
+5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05,85,2020,driven|powerful|uplifting
+6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92,22,2010,ethereal|calm|introspective
+7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89,41,1990,nostalgic|warm|relaxed
+8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22,55,2010,moody|cinematic|mysterious
+9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78,49,2020,calm|focused|introspective
+10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35,71,2010,uplifting|bright|romantic
+11,Crown Season,Blaze Carter,hip-hop,euphoric,0.85,98,0.82,0.91,0.12,88,2020,triumphant|euphoric|bold
+12,Velvet Hours,Sable Moon,r&b,romantic,0.55,95,0.78,0.68,0.48,66,2000,romantic|warm|sensual
+13,Winter Sonata,Clara Voss,classical,melancholic,0.22,66,0.31,0.29,0.97,18,1980,melancholic|introspective|bittersweet
+14,Overdrive,Pulse Grid,edm,euphoric,0.96,140,0.88,0.94,0.03,82,2020,euphoric|powerful|driven
+15,Dirt Road Letters,The Pines,folk,nostalgic,0.38,88,0.62,0.51,0.91,29,2000,nostalgic|warm|bittersweet
+16,Shatter Everything,Iron Veil,metal,angry,0.95,168,0.22,0.71,0.06,35,2010,aggressive|raw|intense
+17,Used To Be,Goldie Vann,soul,sad,0.44,72,0.33,0.45,0.76,52,1990,melancholic|bittersweet|soulful
+18,Island Clock,Reef Collective,reggae,peaceful,0.52,84,0.79,0.67,0.62,44,2000,peaceful|warm|carefree
