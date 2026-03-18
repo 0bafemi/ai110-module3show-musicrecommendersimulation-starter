@@ -77,6 +77,34 @@ class ScoringWeights:
 
 
 # ---------------------------------------------------------------------------
+# Diversity configuration
+#
+# Controls the penalty multipliers applied during greedy re-ranking.
+#
+# How penalties work:
+#   Each time an artist/genre already appears in the selected results,
+#   the candidate's score is multiplied by the penalty factor again:
+#
+#     1st duplicate artist → score × artist_penalty          (e.g. × 0.5)
+#     2nd duplicate artist → score × artist_penalty²         (e.g. × 0.25)
+#
+#   Setting a factor to 1.0 disables that penalty entirely.
+#   Setting a factor to 0.0 hard-blocks all duplicates.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DiversityConfig:
+    """
+    Penalty multipliers for the greedy diversity re-ranking step.
+
+    artist_penalty  — applied once per additional song by the same artist
+    genre_penalty   — applied once per additional song in the same genre
+    """
+    artist_penalty: float = 0.4   # halve-ish the score per repeat artist
+    genre_penalty: float  = 0.6   # softer penalty: genres can repeat, just less often
+
+
+# ---------------------------------------------------------------------------
 # Named scoring modes (the strategy registry)
 #
 # BALANCED    — equal emphasis across all features (default)
@@ -127,14 +155,22 @@ class Recommender:
         user: UserProfile,
         k: int = 5,
         mode: str = "balanced",
+        diversity: Optional[DiversityConfig] = None,
     ) -> List[Song]:
         weights = SCORING_MODES[mode]
-        scored = sorted(
-            self.songs,
-            key=lambda s: self._score(user, s, weights),
-            reverse=True,
-        )
-        return scored[:k]
+        scored = [
+            (song, self._score(user, song, weights))
+            for song in self.songs
+        ]
+        scored.sort(key=lambda x: x[1], reverse=True)
+
+        if diversity is not None:
+            reranked = rerank_with_diversity(
+                [(s, sc, "") for s, sc in scored], k, diversity
+            )
+            return [song for song, _, _ in reranked]
+
+        return [song for song, _ in scored[:k]]
 
     def _score(self, user: UserProfile, song: Song, weights: ScoringWeights) -> float:
         score, _ = score_song(_user_to_dict(user), _song_to_dict(song), weights)
@@ -289,15 +325,91 @@ def score_song(
     return total, reasons
 
 
+def rerank_with_diversity(
+    scored: List[Tuple[Dict, float, str]],
+    k: int,
+    config: DiversityConfig,
+) -> List[Tuple[Dict, float, str]]:
+    """
+    Greedy re-ranking that enforces artist and genre diversity.
+
+    Algorithm:
+      1. Start with all scored songs sorted by original score (best first).
+      2. Greedily pick one song per round:
+           - For each remaining candidate, compute an adjusted score:
+               adjusted = original × artist_penalty^(times artist seen)
+                                   × genre_penalty^(times genre seen)
+           - Select the candidate with the highest adjusted score.
+           - Record its artist and genre as "seen."
+      3. Repeat until k songs are selected or no candidates remain.
+
+    The original score is preserved in the output — the penalty only affects
+    selection order, not the displayed score.
+    """
+    # Pre-sort so ties are broken by original relevance
+    remaining = sorted(scored, key=lambda x: x[1], reverse=True)
+
+    selected: List[Tuple[Dict, float, str]] = []
+    artist_counts: Dict[str, int] = {}
+    genre_counts: Dict[str, int] = {}
+
+    while len(selected) < k and remaining:
+        best_idx = 0
+        best_adjusted = -1.0
+
+        for i, (song, original_score, explanation) in enumerate(remaining):
+            artist_seen = artist_counts.get(song["artist"], 0)
+            genre_seen  = genre_counts.get(song["genre"], 0)
+
+            adjusted = (
+                original_score
+                * (config.artist_penalty ** artist_seen)
+                * (config.genre_penalty  ** genre_seen)
+            )
+
+            if adjusted > best_adjusted:
+                best_adjusted = adjusted
+                best_idx = i
+
+        song, original_score, explanation = remaining.pop(best_idx)
+
+        # Annotate the explanation if a penalty was applied
+        artist_seen = artist_counts.get(song["artist"], 0)
+        genre_seen  = genre_counts.get(song["genre"], 0)
+        if artist_seen > 0 or genre_seen > 0:
+            parts = []
+            if artist_seen > 0:
+                parts.append(
+                    f"artist '{song['artist']}' seen {artist_seen}x "
+                    f"(*{config.artist_penalty**artist_seen:.2f})"
+                )
+            if genre_seen > 0:
+                parts.append(
+                    f"genre '{song['genre']}' seen {genre_seen}x "
+                    f"(*{config.genre_penalty**genre_seen:.2f})"
+                )
+            diversity_note = "diversity penalty: " + ", ".join(parts)
+            explanation = explanation + (
+                ("\n  " if explanation else "") + diversity_note
+            )
+
+        selected.append((song, original_score, explanation))
+        artist_counts[song["artist"]] = artist_seen + 1
+        genre_counts[song["genre"]]   = genre_seen  + 1
+
+    return selected
+
+
 def recommend_songs(
     user_prefs: Dict,
     songs: List[Dict],
     k: int = 5,
     mode: str = "balanced",
+    diversity: Optional[DiversityConfig] = None,
 ) -> List[Tuple[Dict, float, str]]:
     """
-    Score every song using the named mode, sort descending, return top k
-    as (song, score, explanation) tuples.
+    Score every song using the named mode, apply optional diversity
+    re-ranking, and return the top k as (song, score, explanation) tuples.
     """
     weights = SCORING_MODES[mode]
     scored = [
@@ -305,4 +417,9 @@ def recommend_songs(
         for song in songs
         for score, reasons in [score_song(user_prefs, song, weights)]
     ]
-    return sorted(scored, key=lambda x: x[1], reverse=True)[:k]
+    scored.sort(key=lambda x: x[1], reverse=True)
+
+    if diversity is not None:
+        return rerank_with_diversity(scored, k, diversity)
+
+    return scored[:k]
