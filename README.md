@@ -17,17 +17,71 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommenders like Spotify's Discover Weekly operate in two stages: a massive retrieval pass that scores millions of songs using collaborative filtering (what users with similar profiles to me listened to) combined with audio feature analysis, followed by a ranking pass that reorders candidates based on context signals like time of day, device, or recent listening history. These systems also blend in NLP signals — scanning music blogs and playlist names to understand cultural meaning that raw audio features miss. Our simulation focuses on the content-based half of that pipeline: given a user's stated taste preferences, score every song by how closely its attributes match, then rank by score and return the top K. We will prioritize explainability over accuracy — every recommendation will have a human-readable reason attached to it, which real production systems rarely surface to users but is essential for understanding what the algorithm is actually doing.
 
-Some prompts to answer:
+## Feature Specification
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+*Song
+├── id, title, artist       → identity only (never scored)
+├── genre                   → categorical, weighted 0.35
+├── mood                    → categorical, weighted 0.25
+├── energy      (0.0–1.0)   → proximity scored, weighted 0.20
+├── valence     (0.0–1.0)   → proximity scored, weighted 0.12
+├── acousticness(0.0–1.0)   → proximity scored, weighted 0.08
+├── tempo_bpm               → stored, excluded from v1 scoring
+└── danceability            → stored, excluded from v1 scoring
 
-You can include a simple diagram or bullet list if helpful.
+*UserProfile
+├── favorite_genre    (str)          → "pop", "lofi", "rock" etc.
+├── favorite_mood     (str)          → "happy", "chill", "intense" etc.
+├── target_energy     (float 0–1)    → how calm vs. intense they want
+├── target_valence    (float 0–1)    → how positive vs. dark they want
+└── likes_acoustic    (bool)         → converted to 1.0/0.0 for scoring
+
+*My Scoring Rules
+genre_score    = 1.0 if song.genre == user.favorite_genre else 0.0
+mood_score     = 1.0 if song.mood  == user.favorite_mood  else 0.0
+energy_score   = 1 - |user.target_energy  - song.energy|
+valence_score  = 1 - |user.target_valence - song.valence|
+acoustic_score = 1 - |float(user.likes_acoustic) - song.acousticness|
+
+total = (0.35 × genre_score)
+      + (0.25 × mood_score)
+      + (0.20 × energy_score)
+      + (0.12 × valence_score)
+      + (0.08 × acoustic_score)
+
+Result: one float between 0.0 and 1.0 per song.
+
+*My Reccommenation Alg
+┌─────────────────┐
+│   songs.csv     │  ← all 10 songs loaded into memory
+└────────┬────────┘
+         │  for each song
+         ▼
+┌─────────────────┐
+│  Scoring Rule   │  ← compute weighted proximity score (0.0–1.0)
+│  (per song)     │
+└────────┬────────┘
+         │  list of (song, score) pairs
+         ▼
+┌─────────────────┐
+│  Ranking Rule   │  ← sort descending by score
+│  (across all)   │
+└────────┬────────┘
+         │  top K songs + scores
+         ▼
+┌─────────────────┐
+│  Explanation    │  ← generate human-readable reason per song
+│  Generator      │
+└────────┬────────┘
+         ▼
+    Final output: [(song, score, explanation), ...]
+
+This system may over-prioritize genre matching, causing it to ignore songs that perfectly match a user's energy, mood, and emotional tone simply because they come from a different genre — a user who loves chill lofi might never discover that ambient or jazz would feel identical to them. Because it relies entirely on content-based filtering with no awareness of what other users enjoy, it creates a filter bubble: the more someone uses it, the narrower their recommendations become, reinforcing existing taste rather than expanding it. The dataset's uneven genre distribution compounds this — lofi has three songs while most other genres have one, so low-energy users will be over-served while niche taste profiles like metal or classical hit a hard ceiling on recommendation diversity. Finally, since the system has no memory between sessions and no novelty signal, a user with a stable profile will receive the same songs every time — there is no mechanism to surface something new just because the user hasn't heard it yet.
+
+
+
 
 ---
 
